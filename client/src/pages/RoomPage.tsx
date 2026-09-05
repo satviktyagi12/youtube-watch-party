@@ -10,6 +10,7 @@ import {
 
 import ErrorMessage from "../components/common/ErrorMessage";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import Chat from "../components/room/chat";
 import Header from "../components/room/Header";
 import ParticipantList from "../components/room/ParticipantList";
 import RoomInfo from "../components/room/RoomInfo";
@@ -75,9 +76,7 @@ const RoomContent = ({
 
   const handleLeave = (): void => {
     leaveRoom();
-
     removeHostUserId(roomId);
-
     navigate("/");
   };
 
@@ -93,9 +92,7 @@ const RoomContent = ({
     return (
       <main className="room-page">
         <div className="loading-container">
-          <ErrorMessage
-            message={error}
-          />
+          <ErrorMessage message={error} />
         </div>
       </main>
     );
@@ -119,9 +116,7 @@ const RoomContent = ({
 
       <div className="room-layout">
         <section className="room-main">
-          <RoomInfo
-            roomId={roomId}
-          />
+          <RoomInfo roomId={roomId} />
 
           <div className="video-section">
             {roomState.videoId ? (
@@ -185,10 +180,10 @@ const RoomContent = ({
             />
           )}
 
+          <Chat />
+
           {error && !roomClosed && (
-            <ErrorMessage
-              message={error}
-            />
+            <ErrorMessage message={error} />
           )}
         </section>
 

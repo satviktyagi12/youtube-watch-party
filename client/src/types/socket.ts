@@ -45,6 +45,11 @@ export interface RemoveParticipantPayload {
   userId: string;
 }
 
+export interface SendMessagePayload {
+  roomId: string;
+  message: string;
+}
+
 export interface ServerToClientEvents {
   sync_state: (state: SyncState) => void;
 
@@ -94,6 +99,13 @@ export interface ServerToClientEvents {
     message: string;
   }) => void;
 
+  new_message: (data: {
+    userId: string;
+    username: string;
+    message: string;
+    timestamp: number;
+  }) => void;
+
   error: (data: {
     message: string;
   }) => void;
@@ -130,5 +142,9 @@ export interface ClientToServerEvents {
 
   remove_participant: (
     payload: RemoveParticipantPayload
+  ) => void;
+
+  send_message: (
+    payload: SendMessagePayload
   ) => void;
 }

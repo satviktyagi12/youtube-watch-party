@@ -44,14 +44,19 @@ const getRoomAndUser = (
   socket: AppSocket,
   roomId: string
 ) => {
-  const room = roomManager.getRoom(roomId);
+  const room =
+    roomManager.getRoom(roomId);
 
   if (!room) {
-    emitError(socket, "Room not found");
+    emitError(
+      socket,
+      "Room not found"
+    );
     return null;
   }
 
-  const data = getSocketData(socket);
+  const data =
+    getSocketData(socket);
 
   if (
     data.roomId !== roomId ||
@@ -65,7 +70,9 @@ const getRoomAndUser = (
   }
 
   const participant =
-    room.getParticipant(data.userId);
+    room.getParticipant(
+      data.userId
+    );
 
   if (!participant) {
     emitError(
@@ -85,14 +92,19 @@ const getRoomAndUserForManagement = (
   socket: AppSocket,
   roomId: string
 ) => {
-  const room = roomManager.getRoom(roomId);
+  const room =
+    roomManager.getRoom(roomId);
 
   if (!room) {
-    emitError(socket, "Room not found");
+    emitError(
+      socket,
+      "Room not found"
+    );
     return null;
   }
 
-  const data = getSocketData(socket);
+  const data =
+    getSocketData(socket);
 
   if (
     data.roomId !== roomId ||
@@ -106,7 +118,9 @@ const getRoomAndUserForManagement = (
   }
 
   const participant =
-    room.getParticipant(data.userId);
+    room.getParticipant(
+      data.userId
+    );
 
   if (!participant) {
     emitError(
@@ -127,20 +141,24 @@ const removeParticipantFromRoom = (
   socket: AppSocket,
   roomId: string
 ): void => {
-  const room = roomManager.getRoom(roomId);
+  const room =
+    roomManager.getRoom(roomId);
 
   if (!room) {
     return;
   }
 
-  const data = getSocketData(socket);
+  const data =
+    getSocketData(socket);
 
   if (!data.userId) {
     return;
   }
 
   const participant =
-    room.removeParticipant(data.userId);
+    room.removeParticipant(
+      data.userId
+    );
 
   if (!participant) {
     return;
@@ -151,30 +169,44 @@ const removeParticipantFromRoom = (
   data.roomId = undefined;
   data.userId = undefined;
 
-  /*
-   * Notify remaining participants that this user left.
-   */
-  io.to(roomId).emit("user_left", {
-    username: participant.username,
-    userId: participant.userId,
-    participants: room.getParticipants(),
-  });
+  io.to(roomId).emit(
+    "user_left",
+    {
+      username:
+        participant.username,
+      userId:
+        participant.userId,
+      participants:
+        room.getParticipants(),
+    }
+  );
 
   /*
-   * Host leaving closes the MVP room because
-   * host transfer is not implemented.
+   * Host transfer is not implemented in the MVP.
+   * Therefore, explicitly leaving as Host closes
+   * the room and notifies everyone still inside it.
    */
-  if (participant.role === "Host") {
-    io.to(roomId).emit("room_closed", {
-      message:
-        "The host has left. This watch party has ended.",
-    });
+  if (
+    participant.role === "Host"
+  ) {
+    io.to(roomId).emit(
+      "room_closed",
+      {
+        message:
+          "The host has left. This watch party has ended.",
+      }
+    );
 
-    roomManager.deleteRoom(roomId);
+    roomManager.deleteRoom(
+      roomId
+    );
+
     return;
   }
 
-  roomManager.removeEmptyRoom(roomId);
+  roomManager.removeEmptyRoom(
+    roomId
+  );
 };
 
 const handleJoinRoom = (
@@ -186,7 +218,9 @@ const handleJoinRoom = (
   }
 ): void => {
   const roomId =
-    payload.roomId?.trim().toUpperCase();
+    payload.roomId
+      ?.trim()
+      .toUpperCase();
 
   const username =
     payload.username?.trim();
@@ -210,7 +244,8 @@ const handleJoinRoom = (
     return;
   }
 
-  const socketData = getSocketData(socket);
+  const socketData =
+    getSocketData(socket);
 
   if (socketData.roomId) {
     emitError(
@@ -231,19 +266,24 @@ const handleJoinRoom = (
     return;
   }
 
-  const host = room.getHost();
+  const host =
+    room.getHost();
 
   let participant;
 
   /*
-   * Reconnect the existing host when the stored
-   * host user ID is supplied by the same session.
+   * If the client supplies the host's stored
+   * user ID, reconnect the existing Host.
    */
   if (
     requestedUserId &&
     host &&
-    requestedUserId === host.userId
+    requestedUserId ===
+      host.userId
   ) {
+    /*
+     * Prevent two simultaneous Host sessions.
+     */
     if (
       host.socketId &&
       host.socketId !== "pending" &&
@@ -257,40 +297,53 @@ const handleJoinRoom = (
       return;
     }
 
-    host.updateSocketId(socket.id);
-    participant = host;
-  } else {
-    participant = room.addParticipant(
-      username,
+    host.updateSocketId(
       socket.id
     );
+    participant = host;
+  } else {
+    participant =
+      room.addParticipant(
+        username,
+        socket.id
+      );
   }
 
   socket.join(roomId);
 
-  socketData.roomId = roomId;
+  socketData.roomId =
+    roomId;
   socketData.userId =
     participant.userId;
 
-  socket.emit("sync_state", {
-    ...room.getState(),
-    currentUserId:
-      participant.userId,
-  });
-
-  socket.to(roomId).emit(
-    "user_joined",
+  /*
+   * Only the joining client receives its own
+   * currentUserId.
+   */
+  socket.emit(
+    "sync_state",
     {
-      username:
-        participant.username,
-      userId:
+      ...room.getState(),
+      currentUserId:
         participant.userId,
-      role:
-        participant.role,
-      participants:
-        room.getParticipants(),
     }
   );
+
+  socket
+    .to(roomId)
+    .emit(
+      "user_joined",
+      {
+        username:
+          participant.username,
+        userId:
+          participant.userId,
+        role:
+          participant.role,
+        participants:
+          room.getParticipants(),
+      }
+    );
 };
 
 const handleLeaveRoom = (
@@ -299,7 +352,9 @@ const handleLeaveRoom = (
   roomId: string
 ): void => {
   const normalizedRoomId =
-    roomId?.trim().toUpperCase();
+    roomId
+      ?.trim()
+      .toUpperCase();
 
   if (!normalizedRoomId) {
     emitError(
@@ -324,17 +379,20 @@ const handlePlay = (
     currentTime?: number;
   }
 ): void => {
-  const result = getRoomAndUser(
-    socket,
-    payload.roomId
-  );
+  const result =
+    getRoomAndUser(
+      socket,
+      payload.roomId
+    );
 
   if (!result) {
     return;
   }
 
-  const { room, participant } =
-    result;
+  const {
+    room,
+    participant,
+  } = result;
 
   if (
     !canControlPlayback(
@@ -382,17 +440,20 @@ const handlePause = (
     currentTime?: number;
   }
 ): void => {
-  const result = getRoomAndUser(
-    socket,
-    payload.roomId
-  );
+  const result =
+    getRoomAndUser(
+      socket,
+      payload.roomId
+    );
 
   if (!result) {
     return;
   }
 
-  const { room, participant } =
-    result;
+  const {
+    room,
+    participant,
+  } = result;
 
   if (
     !canControlPlayback(
@@ -440,17 +501,20 @@ const handleSeek = (
     time: number;
   }
 ): void => {
-  const result = getRoomAndUser(
-    socket,
-    payload.roomId
-  );
+  const result =
+    getRoomAndUser(
+      socket,
+      payload.roomId
+    );
 
   if (!result) {
     return;
   }
 
-  const { room, participant } =
-    result;
+  const {
+    room,
+    participant,
+  } = result;
 
   if (
     !canControlPlayback(
@@ -499,17 +563,20 @@ const handleChangeVideo = (
     videoId: string;
   }
 ): void => {
-  const result = getRoomAndUser(
-    socket,
-    payload.roomId
-  );
+  const result =
+    getRoomAndUser(
+      socket,
+      payload.roomId
+    );
 
   if (!result) {
     return;
   }
 
-  const { room, participant } =
-    result;
+  const {
+    room,
+    participant,
+  } = result;
 
   if (
     !canControlPlayback(
@@ -573,7 +640,9 @@ const handleAssignRole = (
     participant: requester,
   } = result;
 
-  if (requester.role !== "Host") {
+  if (
+    requester.role !== "Host"
+  ) {
     emitError(
       socket,
       "Only the host can assign roles"
@@ -582,8 +651,10 @@ const handleAssignRole = (
   }
 
   if (
-    payload.role !== "Moderator" &&
-    payload.role !== "Participant"
+    payload.role !==
+      "Moderator" &&
+    payload.role !==
+      "Participant"
   ) {
     emitError(
       socket,
@@ -605,7 +676,9 @@ const handleAssignRole = (
     return;
   }
 
-  if (target.role === "Host") {
+  if (
+    target.role === "Host"
+  ) {
     emitError(
       socket,
       "The host role cannot be changed"
@@ -690,7 +763,9 @@ const handleRemoveParticipant = (
     return;
   }
 
-  if (target.role === "Host") {
+  if (
+    target.role === "Host"
+  ) {
     emitError(
       socket,
       "The host cannot be removed"
@@ -716,6 +791,10 @@ const handleRemoveParticipant = (
       removedParticipant.socketId
     );
 
+  /*
+   * Broadcast to the entire room, including
+   * the Host who performed the removal.
+   */
   io.to(room.roomId).emit(
     "participant_removed",
     {
@@ -736,12 +815,70 @@ const handleRemoveParticipant = (
         targetSocket as AppSocket
       );
 
-    targetData.roomId = undefined;
-    targetData.userId = undefined;
+    targetData.roomId =
+      undefined;
+
+    targetData.userId =
+      undefined;
   }
 
   roomManager.removeEmptyRoom(
     room.roomId
+  );
+};
+
+const handleSendMessage = (
+  io: AppServer,
+  socket: AppSocket,
+  payload: {
+    roomId: string;
+    message: string;
+  }
+): void => {
+  const result =
+    getRoomAndUser(
+      socket,
+      payload.roomId
+    );
+
+  if (!result) {
+    return;
+  }
+
+  const {
+    room,
+    participant,
+  } = result;
+
+  const message =
+    payload.message?.trim();
+
+  if (!message) {
+    emitError(
+      socket,
+      "Message cannot be empty"
+    );
+    return;
+  }
+
+  if (message.length > 500) {
+    emitError(
+      socket,
+      "Message must be 500 characters or fewer"
+    );
+    return;
+  }
+
+  io.to(room.roomId).emit(
+    "new_message",
+    {
+      userId:
+        participant.userId,
+      username:
+        participant.username,
+      message,
+      timestamp: Date.now(),
+    }
   );
 };
 
@@ -778,14 +915,21 @@ const handleDisconnect = (
   }
 
   /*
-   * Keep the host in the room after a temporary
-   * disconnect so a refresh/reconnect can work.
+   * Keep the Host in the room after a temporary
+   * disconnect so refresh/reconnect can work.
    */
-  if (participant.role === "Host") {
-    participant.updateSocketId("");
+  if (
+    participant.role === "Host"
+  ) {
+    participant.updateSocketId(
+      ""
+    );
 
-    data.roomId = undefined;
-    data.userId = undefined;
+    data.roomId =
+      undefined;
+
+    data.userId =
+      undefined;
 
     return;
   }
@@ -811,8 +955,11 @@ const handleDisconnect = (
     }
   );
 
-  data.roomId = undefined;
-  data.userId = undefined;
+  data.roomId =
+    undefined;
+
+  data.userId =
+    undefined;
 
   roomManager.removeEmptyRoom(
     room.roomId
@@ -903,6 +1050,17 @@ export const registerSocketHandlers = (
     "remove_participant",
     (payload) => {
       handleRemoveParticipant(
+        io,
+        socket,
+        payload
+      );
+    }
+  );
+
+  socket.on(
+    "send_message",
+    (payload) => {
+      handleSendMessage(
         io,
         socket,
         payload

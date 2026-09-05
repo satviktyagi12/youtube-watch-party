@@ -23,6 +23,10 @@ interface RoomContextValue {
 
   currentUserId: string | undefined;
 
+  messages: ReturnType<
+    typeof useRoom
+  >["messages"];
+
   isHost: boolean;
   isModerator: boolean;
   canControlPlayback: boolean;
@@ -44,6 +48,10 @@ interface RoomContextValue {
 
   removeParticipant: (
     userId: string
+  ) => void;
+
+  sendMessage: (
+    message: string
   ) => void;
 
   leaveRoom: () => void;
@@ -87,6 +95,9 @@ export const RoomProvider = ({
     currentUserId:
       room.currentUserId,
 
+    messages:
+      room.messages,
+
     isHost: room.isHost,
     isModerator:
       room.isModerator,
@@ -115,12 +126,17 @@ export const RoomProvider = ({
     removeParticipant:
       room.removeParticipant,
 
+    sendMessage:
+      room.sendMessage,
+
     leaveRoom:
       room.leaveRoom,
   };
 
   return (
-    <RoomContext.Provider value={value}>
+    <RoomContext.Provider
+      value={value}
+    >
       {children}
     </RoomContext.Provider>
   );

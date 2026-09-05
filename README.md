@@ -32,6 +32,7 @@ Users can create or join rooms, control synchronized playback based on their rol
 - Late joiners receive the current video and playback state
 - Custom playback controls
 - YouTube URLs and video IDs are supported
+- Real-time text chat for all room participants
 
 ### Role-Based Access Control
 
@@ -204,6 +205,7 @@ Server → Client
 | `participant_removed` | Notify clients about a removed user        |
 | `room_closed`         | Notify users when the Host closes the room |
 | `error`               | Communicate server-side validation errors  |
+| `new_message`         | Broadcast a chat message to everyone in the room |
 
 # REST API
 
@@ -407,6 +409,7 @@ Host leaving and room closure
 Invalid room code
 Invalid YouTube URL
 Production Vercel → Render communication
+Real-time text chat
 
 # Design Decisions and Trade-offs
 
@@ -446,7 +449,6 @@ Authentication
 Host transfer
 Redis adapter for multi-instance Socket.IO
 Horizontal scaling
-Persistent chat
 Emoji reactions
 Connection recovery
 More advanced playback drift correction

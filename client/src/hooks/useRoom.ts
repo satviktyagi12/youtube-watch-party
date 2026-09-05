@@ -6,20 +6,26 @@ import {
 } from "react";
 
 import { AppSocket } from "../services/socket";
+
 import {
   Participant,
   ParticipantRole,
 } from "../types/participant";
+
 import {
   RoomState,
   SyncState,
 } from "../types/room";
+
+import { ChatMessage } from "../types/chat";
 
 interface UseRoomReturn {
   roomState: RoomState | null;
   participants: Participant[];
   currentParticipant: Participant | null;
   currentUserId: string | undefined;
+
+  messages: ChatMessage[];
 
   isHost: boolean;
   isModerator: boolean;
@@ -43,6 +49,10 @@ interface UseRoomReturn {
     userId: string
   ) => void;
 
+  sendMessage: (
+    message: string
+  ) => void;
+
   leaveRoom: () => void;
 }
 
@@ -59,6 +69,9 @@ export const useRoom = (
     useState<string | undefined>(
       hostUserId
     );
+
+  const [messages, setMessages] =
+    useState<ChatMessage[]>([]);
 
   const [isRemoved, setIsRemoved] =
     useState(false);
@@ -90,12 +103,10 @@ export const useRoom = (
   ]);
 
   const isHost =
-    currentParticipant?.role ===
-    "Host";
+    currentParticipant?.role === "Host";
 
   const isModerator =
-    currentParticipant?.role ===
-    "Moderator";
+    currentParticipant?.role === "Moderator";
 
   const canControlPlayback =
     isHost || isModerator;
@@ -109,7 +120,8 @@ export const useRoom = (
         videoId: state.videoId,
         isPlaying: state.isPlaying,
         currentTime: state.currentTime,
-        participants: state.participants,
+        participants:
+          state.participants,
       });
 
       setCurrentUserId(
@@ -211,6 +223,17 @@ export const useRoom = (
     ): void => {
       setRoomClosed(true);
       setError(data.message);
+    };
+
+    const handleNewMessage = (
+      data: ChatMessage
+    ): void => {
+      setMessages(
+        (previousMessages) => [
+          ...previousMessages,
+          data,
+        ]
+      );
     };
 
     const handlePlay = (data: {
@@ -329,6 +352,11 @@ export const useRoom = (
     );
 
     socket.on(
+      "new_message",
+      handleNewMessage
+    );
+
+    socket.on(
       "play",
       handlePlay
     );
@@ -382,6 +410,11 @@ export const useRoom = (
       socket.off(
         "room_closed",
         handleRoomClosed
+      );
+
+      socket.off(
+        "new_message",
+        handleNewMessage
       );
 
       socket.off(
@@ -538,6 +571,28 @@ export const useRoom = (
       [socket, roomId]
     );
 
+  const sendMessage =
+    useCallback(
+      (message: string): void => {
+        const trimmedMessage =
+          message.trim();
+
+        if (!trimmedMessage) {
+          return;
+        }
+
+        socket.emit(
+          "send_message",
+          {
+            roomId,
+            message:
+              trimmedMessage,
+          }
+        );
+      },
+      [socket, roomId]
+    );
+
   const leaveRoom =
     useCallback((): void => {
       socket.emit(
@@ -555,6 +610,8 @@ export const useRoom = (
     currentParticipant,
     currentUserId,
 
+    messages,
+
     isHost,
     isModerator,
     canControlPlayback,
@@ -569,6 +626,7 @@ export const useRoom = (
     changeVideo,
     assignRole,
     removeParticipant,
+    sendMessage,
     leaveRoom,
   };
 };
