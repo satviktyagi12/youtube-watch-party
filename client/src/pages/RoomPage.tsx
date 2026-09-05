@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import {
   useNavigate,
   useParams,
@@ -41,6 +42,7 @@ const RoomContent = ({
     isHost,
     canControlPlayback,
     isRemoved,
+    roomClosed,
     isConnected,
     error,
     play,
@@ -60,19 +62,22 @@ const RoomContent = ({
   }, [roomState?.videoId]);
 
   useEffect(() => {
-    if (isRemoved) {
+    if (isRemoved || roomClosed) {
       removeHostUserId(roomId);
       navigate("/");
     }
   }, [
     isRemoved,
+    roomClosed,
     navigate,
     roomId,
   ]);
 
   const handleLeave = (): void => {
     leaveRoom();
+
     removeHostUserId(roomId);
+
     navigate("/");
   };
 
@@ -180,7 +185,7 @@ const RoomContent = ({
             />
           )}
 
-          {error && (
+          {error && !roomClosed && (
             <ErrorMessage
               message={error}
             />

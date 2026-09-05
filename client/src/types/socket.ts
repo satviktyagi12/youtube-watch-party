@@ -90,6 +90,10 @@ export interface ServerToClientEvents {
     participants: Participant[];
   }) => void;
 
+  room_closed: (data: {
+    message: string;
+  }) => void;
+
   error: (data: {
     message: string;
   }) => void;

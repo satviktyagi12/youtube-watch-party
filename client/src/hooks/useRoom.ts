@@ -24,7 +24,9 @@ interface UseRoomReturn {
   isHost: boolean;
   isModerator: boolean;
   canControlPlayback: boolean;
+
   isRemoved: boolean;
+  roomClosed: boolean;
   error: string | null;
 
   play: (currentTime?: number) => void;
@@ -59,6 +61,9 @@ export const useRoom = (
     );
 
   const [isRemoved, setIsRemoved] =
+    useState(false);
+
+  const [roomClosed, setRoomClosed] =
     useState(false);
 
   const [error, setError] =
@@ -112,39 +117,44 @@ export const useRoom = (
       );
 
       setIsRemoved(false);
+      setRoomClosed(false);
       setError(null);
     };
 
     const handleUserJoined = (data: {
       participants: Participant[];
     }): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          participants:
-            data.participants,
-        };
-      });
+          return {
+            ...previousState,
+            participants:
+              data.participants,
+          };
+        }
+      );
     };
 
     const handleUserLeft = (data: {
       participants: Participant[];
     }): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          participants:
-            data.participants,
-        };
-      });
+          return {
+            ...previousState,
+            participants:
+              data.participants,
+          };
+        }
+      );
     };
 
     const handleRoleAssigned = (
@@ -152,17 +162,19 @@ export const useRoom = (
         participants: Participant[];
       }
     ): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          participants:
-            data.participants,
-        };
-      });
+          return {
+            ...previousState,
+            participants:
+              data.participants,
+          };
+        }
+      );
     };
 
     const handleParticipantRemoved = (
@@ -171,17 +183,19 @@ export const useRoom = (
         participants: Participant[];
       }
     ): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          participants:
-            data.participants,
-        };
-      });
+          return {
+            ...previousState,
+            participants:
+              data.participants,
+          };
+        }
+      );
 
       if (
         data.userId === currentUserId
@@ -190,53 +204,68 @@ export const useRoom = (
       }
     };
 
+    const handleRoomClosed = (
+      data: {
+        message: string;
+      }
+    ): void => {
+      setRoomClosed(true);
+      setError(data.message);
+    };
+
     const handlePlay = (data: {
       currentTime: number;
     }): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          isPlaying: true,
-          currentTime:
-            data.currentTime,
-        };
-      });
+          return {
+            ...previousState,
+            isPlaying: true,
+            currentTime:
+              data.currentTime,
+          };
+        }
+      );
     };
 
     const handlePause = (data: {
       currentTime: number;
     }): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          isPlaying: false,
-          currentTime:
-            data.currentTime,
-        };
-      });
+          return {
+            ...previousState,
+            isPlaying: false,
+            currentTime:
+              data.currentTime,
+          };
+        }
+      );
     };
 
     const handleSeek = (data: {
       time: number;
     }): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          currentTime: data.time,
-        };
-      });
+          return {
+            ...previousState,
+            currentTime: data.time,
+          };
+        }
+      );
     };
 
     const handleChangeVideo = (
@@ -245,20 +274,22 @@ export const useRoom = (
         currentTime: number;
       }
     ): void => {
-      setRoomState((previousState) => {
-        if (!previousState) {
-          return previousState;
-        }
+      setRoomState(
+        (previousState) => {
+          if (!previousState) {
+            return previousState;
+          }
 
-        return {
-          ...previousState,
-          videoId:
-            data.videoId,
-          isPlaying: false,
-          currentTime:
-            data.currentTime,
-        };
-      });
+          return {
+            ...previousState,
+            videoId:
+              data.videoId,
+            isPlaying: false,
+            currentTime:
+              data.currentTime,
+          };
+        }
+      );
     };
 
     const handleError = (data: {
@@ -290,6 +321,11 @@ export const useRoom = (
     socket.on(
       "participant_removed",
       handleParticipantRemoved
+    );
+
+    socket.on(
+      "room_closed",
+      handleRoomClosed
     );
 
     socket.on(
@@ -341,6 +377,11 @@ export const useRoom = (
       socket.off(
         "participant_removed",
         handleParticipantRemoved
+      );
+
+      socket.off(
+        "room_closed",
+        handleRoomClosed
       );
 
       socket.off(
@@ -517,7 +558,9 @@ export const useRoom = (
     isHost,
     isModerator,
     canControlPlayback,
+
     isRemoved,
+    roomClosed,
     error,
 
     play,

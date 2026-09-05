@@ -2,10 +2,7 @@ import {
   Participant,
   ParticipantRole,
 } from "./participant";
-import {
-  RoomState,
-  SyncState,
-} from "./room";
+import { SyncState } from "./room";
 
 export interface JoinRoomPayload {
   roomId: string;
@@ -91,6 +88,10 @@ export interface ServerToClientEvents {
   participant_removed: (data: {
     userId: string;
     participants: Participant[];
+  }) => void;
+
+  room_closed: (data: {
+    message: string;
   }) => void;
 
   error: (data: {

@@ -151,13 +151,25 @@ const removeParticipantFromRoom = (
   data.roomId = undefined;
   data.userId = undefined;
 
+  /*
+   * Notify remaining participants that this user left.
+   */
   io.to(roomId).emit("user_left", {
     username: participant.username,
     userId: participant.userId,
     participants: room.getParticipants(),
   });
 
+  /*
+   * Host leaving closes the MVP room because
+   * host transfer is not implemented.
+   */
   if (participant.role === "Host") {
+    io.to(roomId).emit("room_closed", {
+      message:
+        "The host has left. This watch party has ended.",
+    });
+
     roomManager.deleteRoom(roomId);
     return;
   }
@@ -223,6 +235,10 @@ const handleJoinRoom = (
 
   let participant;
 
+  /*
+   * Reconnect the existing host when the stored
+   * host user ID is supplied by the same session.
+   */
   if (
     requestedUserId &&
     host &&
@@ -700,10 +716,6 @@ const handleRemoveParticipant = (
       removedParticipant.socketId
     );
 
-  /*
-   * Broadcast to everyone currently in the room,
-   * including the Host who performed the removal.
-   */
   io.to(room.roomId).emit(
     "participant_removed",
     {
@@ -766,8 +778,8 @@ const handleDisconnect = (
   }
 
   /*
-   * Keep the host in the room while disconnected
-   * so a refresh/reconnect does not destroy the room.
+   * Keep the host in the room after a temporary
+   * disconnect so a refresh/reconnect can work.
    */
   if (participant.role === "Host") {
     participant.updateSocketId("");
